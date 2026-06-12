@@ -11,19 +11,19 @@ const C = {
 const F = "system-ui,-apple-system,'Helvetica Neue',sans-serif";
 
 const USERS = [
-  {id:1, name:"Арсений", pin:"1111",role:"participant",pts:6, exact:1},
-  {id:2, name:"Евгений", pin:"2222",role:"participant",pts:6, exact:1},
-  {id:3, name:"Талгат",  pin:"3333",role:"participant",pts:10,exact:2},
-  {id:4, name:"Масрур",  pin:"4444",role:"participant",pts:10,exact:2},
-  {id:5, name:"Василий", pin:"5555",role:"participant",pts:10,exact:2},
-  {id:6, name:"Джа",     pin:"6666",role:"participant",pts:15,exact:3},
+  {id:1, name:"Арсений", pin:"2805",role:"participant",pts:6, exact:1},
+  {id:2, name:"Евгений", pin:"0000",role:"participant",pts:6, exact:1},
+  {id:3, name:"Талгат",  pin:"0000",role:"participant",pts:10,exact:2},
+  {id:4, name:"Масрур",  pin:"0000",role:"participant",pts:10,exact:2},
+  {id:5, name:"Василий", pin:"0000",role:"participant",pts:10,exact:2},
+  {id:6, name:"Джа",     pin:"0000",role:"participant",pts:15,exact:3},
   {id:7, name:"Саша К",  pin:"1903",role:"participant",pts:8, exact:0},
-  {id:8, name:"Дарий",   pin:"8888",role:"participant",pts:8, exact:0},
-  {id:9, name:"Олег",    pin:"9999",role:"participant",pts:10,exact:2},
-  {id:10,name:"Игорь",   pin:"0101",role:"participant",pts:6, exact:1},
-  {id:11,name:"Саша С",  pin:"1212",role:"participant",pts:0, exact:0},
-  {id:12,name:"Марат",   pin:"2121",role:"participant",pts:1, exact:0},
-  {id:13,name:"Саша Л",  pin:"3131",role:"participant",pts:2, exact:0},
+  {id:8, name:"Дарий",   pin:"0000",role:"participant",pts:8, exact:0},
+  {id:9, name:"Олег",    pin:"0000",role:"participant",pts:10,exact:2},
+  {id:10,name:"Игорь",   pin:"0000",role:"participant",pts:6, exact:1},
+  {id:11,name:"Саша С",  pin:"0000",role:"participant",pts:0, exact:0},
+  {id:12,name:"Марат",   pin:"0000",role:"participant",pts:1, exact:0},
+  {id:13,name:"Саша Л",  pin:"0000",role:"participant",pts:2, exact:0},
   {id:98,name:"Админ",   pin:"0000",role:"admin",      pts:0, exact:0},
 ];
 
