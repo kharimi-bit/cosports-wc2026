@@ -158,6 +158,7 @@ function Login({onLogin}){
           <Btn onClick={go} variant={sel&&pin.length===4?"green":"ghost"} full>
             {sel&&pin.length===4?"Войти →":"Выбери имя + введи пин"}
           </Btn>
+<div style={{textAlign:"center",marginTop:10}}><button onClick={()=>onLogin({id:0,name:"Гость",role:"guest",pts:0,exact:0})} style={{background:"none",border:"none",fontSize:11,fontWeight:700,color:"#888",textTransform:"uppercase",cursor:"pointer",textDecoration:"underline"}}>👁 Смотреть без входа</button></div>
         </div>
 
       </div>
