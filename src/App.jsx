@@ -17,7 +17,7 @@ const USERS = [
   {id:4, name:"Масрур",  pin:"0000",role:"participant",pts:10,exact:2},
   {id:5, name:"Василий", pin:"0000",role:"participant",pts:10,exact:2},
   {id:6, name:"Джа",     pin:"0000",role:"participant",pts:15,exact:3},
-  {id:7, name:"Саша К",  pin:"1903",role:"participant",pts:8, exact:0},
+  {id:7, name:"Саша К",  pin:"1903",role:"owner",pts:8, exact:0},
   {id:8, name:"Дарий",   pin:"0000",role:"participant",pts:8, exact:0},
   {id:9, name:"Олег",    pin:"0000",role:"participant",pts:10,exact:2},
   {id:10,name:"Игорь",   pin:"0000",role:"participant",pts:6, exact:1},
