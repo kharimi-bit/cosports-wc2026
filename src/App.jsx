@@ -17,7 +17,7 @@ const USERS = [
   {id:4, name:"Масрур",  pin:"4444",role:"participant",pts:10,exact:2},
   {id:5, name:"Василий", pin:"5555",role:"participant",pts:10,exact:2},
   {id:6, name:"Джа",     pin:"6666",role:"participant",pts:15,exact:3},
-  {id:7, name:"Саша К",  pin:"7777",role:"participant",pts:8, exact:0},
+  {id:7, name:"Саша К",  pin:"1903",role:"participant",pts:8, exact:0},
   {id:8, name:"Дарий",   pin:"8888",role:"participant",pts:8, exact:0},
   {id:9, name:"Олег",    pin:"9999",role:"participant",pts:10,exact:2},
   {id:10,name:"Игорь",   pin:"0101",role:"participant",pts:6, exact:1},
@@ -159,9 +159,7 @@ function Login({onLogin}){
             {sel&&pin.length===4?"Войти →":"Выбери имя + введи пин"}
           </Btn>
         </div>
-        <div style={{fontFamily:F,fontSize:9,color:C.grayDk,textAlign:"center",padding:"8px 0 0",textTransform:"uppercase",letterSpacing:.4}}>
-          Арсений=1111 · Талгат=3333 · Джа=6666 · Админ=0000
-        </div>
+
       </div>
     </Scroll>
   );
