@@ -132,28 +132,51 @@ function Nav({ tab, setTab, isAdmin, canEditScores }) {
 // ─── LOGIN ───────────────────────────────────────────────────────────────────
 function Login({ onLogin }) {
   const [users, setUsers] = useState([]);
-  const [sel, setSel] = useState(null);
-  const [pin, setPin] = useState("");
-  const [err, setErr] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [tgUser, setTgUser] = useState(null);
+  const [sel, setSel] = useState(null);
+  const [binding, setBinding] = useState(false);
 
   useEffect(() => {
-    SB.from("users").select("*").then(({ data }) => { setUsers(data||[]); setLoading(false); });
+    // Expand to full screen in Telegram
+    window.Telegram?.WebApp?.expand();
+
+    async function init() {
+      const { data } = await SB.from("users").select("*");
+      const allUsers = data || [];
+      setUsers(allUsers);
+
+      // Try Telegram auto-login
+      const tg = window.Telegram?.WebApp?.initDataUnsafe?.user;
+      if (tg?.id) {
+        const found = allUsers.find(u => String(u.telegram_id) === String(tg.id));
+        if (found) { onLogin(found); return; } // ✅ Авто-вход!
+        setTgUser(tg); // Первый раз — предложим привязать
+      }
+      setLoading(false);
+    }
+    init();
   }, []);
 
   const parts = users.filter(u =>
     (u.role === "participant" || u.role === "owner" || u.role === "admin") && u.id !== 98
   );
 
-  function go() {
-    const u = users.find(u => u.id === sel && u.pin === pin);
-    if (u) { setErr(false); onLogin(u); }
-    else { setErr(true); setPin(""); }
+  async function bindAndLogin(userId) {
+    setBinding(true);
+    const user = users.find(u => u.id === userId);
+    if (tgUser?.id) {
+      await SB.from("users").update({ telegram_id: tgUser.id }).eq("id", userId);
+    }
+    onLogin(user);
   }
 
   if (loading) return (
-    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <div style={{fontFamily:F,fontSize:14,fontWeight:700,color:C.grayDk,textTransform:"uppercase"}}>Загрузка...</div>
+    <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}>
+      <div style={{width:40,height:40,background:C.green,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center"}}>
+        <LogoSVG size={34}/>
+      </div>
+      <div style={{fontFamily:F,fontSize:12,fontWeight:700,color:C.grayDk,textTransform:"uppercase",letterSpacing:1}}>Загрузка...</div>
     </div>
   );
 
@@ -168,38 +191,53 @@ function Login({ onLogin }) {
             CoSports<br/><span style={{fontSize:12,fontWeight:600,opacity:.8,letterSpacing:1}}>ЧМ 2026 · ПРОГНОЗЫ</span>
           </div>
         </div>
-        <div style={{fontFamily:F,fontWeight:900,fontSize:34,color:C.white,textTransform:"uppercase",letterSpacing:"-1.5px",lineHeight:.95}}>ВЫБЕРИ<br/>УЧАСТНИКА</div>
+        {tgUser
+          ? <div style={{fontFamily:F,fontWeight:900,fontSize:28,color:C.white,textTransform:"uppercase",letterSpacing:"-1px",lineHeight:1}}>
+              ПРИВЕТ,<br/>{tgUser.first_name?.toUpperCase()}!<br/>
+              <span style={{fontSize:13,fontWeight:600,opacity:.8}}>Выбери своё имя один раз</span>
+            </div>
+          : <div style={{fontFamily:F,fontWeight:900,fontSize:34,color:C.white,textTransform:"uppercase",letterSpacing:"-1.5px",lineHeight:.95}}>ВЫБЕРИ<br/>УЧАСТНИКА</div>
+        }
       </div>
+
       <div style={{padding:16}}>
+        {tgUser && (
+          <div style={{background:C.black,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
+            <span style={{fontSize:18}}>🔗</span>
+            <div style={{fontFamily:F,fontSize:11,color:C.white,lineHeight:1.5}}>
+              Telegram: <b style={{color:C.green}}>{tgUser.first_name} {tgUser.last_name||""}</b><br/>
+              <span style={{color:C.grayDk,fontSize:10}}>После выбора имени вход будет автоматическим</span>
+            </div>
+          </div>
+        )}
+
+        <div style={{fontFamily:F,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:C.grayDk,marginBottom:8}}>
+          {tgUser ? "Кто ты в нашей игре?" : "Выбери участника"}
+        </div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:3,marginBottom:16}}>
           {parts.map(u => (
-            <button key={u.id} onClick={()=>{setSel(u.id);setErr(false);setPin("");}} style={{
-              background:sel===u.id?C.green:C.white,border:`2px solid ${sel===u.id?C.green:C.gray}`,
-              borderRadius:0,padding:"11px 6px",color:sel===u.id?C.white:C.black,
+            <button key={u.id} onClick={()=>setSel(u.id)} style={{
+              background:sel===u.id?C.green:C.white,
+              border:`2px solid ${sel===u.id?C.green:C.gray}`,
+              borderRadius:0,padding:"13px 6px",color:sel===u.id?C.white:C.black,
               fontFamily:F,fontSize:13,fontWeight:700,cursor:"pointer",textTransform:"uppercase"
             }}>{u.name}</button>
           ))}
         </div>
-        <div style={{background:C.white,padding:16}}>
-          <div style={{fontFamily:F,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:C.grayDk,marginBottom:12}}>Пин-код</div>
-          <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:err?8:16}}>
-            {[0,1,2,3].map(i => <div key={i} style={{width:16,height:16,borderRadius:"50%",background:pin.length>i?C.green:C.gray,transition:"background .15s"}}/>)}
+
+        <Btn
+          onClick={()=>sel&&bindAndLogin(sel)}
+          variant={sel?"green":"ghost"}
+          full
+        >
+          {binding ? "⏳ Входим..." : sel ? (tgUser ? "✅ Это я, войти!" : "Войти →") : "Выбери своё имя"}
+        </Btn>
+
+        {!tgUser && (
+          <div style={{fontFamily:F,fontSize:10,color:C.grayDk,textAlign:"center",marginTop:10,textTransform:"uppercase",letterSpacing:.5}}>
+            Открой через Telegram для авто-входа
           </div>
-          {err && <div style={{fontFamily:F,fontSize:11,fontWeight:700,color:C.red,textAlign:"center",textTransform:"uppercase",marginBottom:10}}>Неверный пин-код</div>}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:3,marginBottom:12}}>
-            {["1","2","3","4","5","6","7","8","9","","0","⌫"].map((d,i) => (
-              <button key={i} onClick={()=>{
-                if(d==="⌫"){setPin(p=>p.slice(0,-1));setErr(false);}
-                else if(d!==""&&pin.length<4){setPin(p=>p+d);setErr(false);}
-              }} style={{background:d===""?"transparent":C.black,border:"none",padding:"14px 0",color:C.white,fontFamily:F,fontSize:20,fontWeight:900,cursor:d===""?"default":"pointer",visibility:d===""?"hidden":"visible"}}>
-                {d}
-              </button>
-            ))}
-          </div>
-          <Btn onClick={go} variant={sel&&pin.length===4?"green":"ghost"} full>
-            {sel&&pin.length===4?"Войти →":"Выбери имя + введи пин"}
-          </Btn>
-        </div>
+        )}
       </div>
     </Scroll>
   );
@@ -377,6 +415,7 @@ function Preds({ user, matches, predictions, onSave }) {
 function UserPreds({ viewUser, matches, predictions, onBack }) {
   const { pts, exact } = calcUserStats(viewUser.id, matches, predictions);
   const played = matches.filter(m=>m.home_score!==null&&m.away_score!==null).length;
+  const medals = ["🥇","🥈","🥉"];
 
   return (
     <Scroll>
@@ -613,7 +652,7 @@ function AdminMatches({ matches, onUpdateScore }) {
   const [syncMsg, setSyncMsg] = useState("");
 
   async function autoSync() {
-    if (!FOOTBALL_API_KEY) { setSyncMsg("⚠️ API ключ не задан."); return; }
+    if (!FOOTBALL_API_KEY) { setSyncMsg("⚠️ API ключ не задан. Вставьте ключ с football-data.org в код."); return; }
     setSyncing(true); setSyncMsg("Синхронизация...");
     try {
       const r = await fetch("https://api.football-data.org/v4/competitions/2000/matches?status=FINISHED", {headers:{"X-Auth-Token":FOOTBALL_API_KEY}});
