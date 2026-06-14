@@ -132,9 +132,11 @@ function TgBar({ onBack, isAdmin }) {
   );
 }
 
-function Nav({ tab, setTab, isAdmin }) {
+function Nav({ tab, setTab, isAdmin, canEditScores }) {
   const tabs = isAdmin
     ? [["home", "⚽", "Главная"], ["matches", "⚙️", "Счета"], ["lb", "🏆", "Рейтинг"], ["users", "👥", "Люди"], ["blast", "📣", "Рассылки"]]
+    : canEditScores
+    ? [["home", "⚽", "Главная"], ["preds", "✏️", "Прогнозы"], ["matches", "⚙️", "Счета"], ["lb", "🏆", "Рейтинг"], ["notifs", "🔔", "Уведом."]]
     : [["home", "⚽", "Главная"], ["preds", "✏️", "Прогнозы"], ["lb", "🏆", "Рейтинг"], ["notifs", "🔔", "Уведом."]];
   return (
     <div style={{ display: "flex", background: C.black, flexShrink: 0 }}>
@@ -542,9 +544,34 @@ function AdminHome({ setTab, matches, users }) {
 }
 
 // ── ADMIN MATCHES ──────────────────────────────────────────────────────────
+const FOOTBALL_API_KEY = ""; // ключ с football-data.org (бесплатно)
+
 function AdminMatches({ matches, onUpdateScore }) {
   const [scores, setScores] = useState({});
   const [saving, setSaving] = useState({});
+  const [syncing, setSyncing] = useState(false);
+  const [syncLog, setSyncLog] = useState("");
+
+  async function autoSync() {
+    if (!FOOTBALL_API_KEY) { setSyncLog("❌ API ключ не задан"); return; }
+    setSyncing(true); setSyncLog("⏳ Загружаем...");
+    try {
+      const r = await fetch("https://api.football-data.org/v4/competitions/2000/matches?status=FINISHED",{headers:{"X-Auth-Token":FOOTBALL_API_KEY}});
+      if (!r.ok) { setSyncLog("❌ "+r.status); setSyncing(false); return; }
+      const {matches:am=[]} = await r.json(); let upd=0;
+      for (const m of am) {
+        const hs=m.score?.fullTime?.home,as_=m.score?.fullTime?.away;
+        if(hs==null||as_==null)continue;
+        const h=m.homeTeam.name.toUpperCase(),a=m.awayTeam.name.toUpperCase();
+        const f=matches.find(x=>x.home_score===null&&
+          (x.home_team.toUpperCase().includes(h.slice(0,4))||h.includes(x.home_team.toUpperCase().slice(0,4)))&&
+          (x.away_team.toUpperCase().includes(a.slice(0,4))||a.includes(x.away_team.toUpperCase().slice(0,4))));
+        if(f){await onUpdateScore(f.id,hs,as_);upd++;}
+      }
+      setSyncLog("✅ Обновлено: "+upd);
+    } catch(e){setSyncLog("❌ "+e.message);}
+    setSyncing(false);
+  }
 
   async function save(matchId) {
     const sc = scores[matchId];
@@ -557,6 +584,11 @@ function AdminMatches({ matches, onUpdateScore }) {
   return (
     <Scroll>
       <GreenHero title="Счета матчей" />
+      <div style={{padding:"10px 12px 0"}}>
+        <Btn full onClick={autoSync} disabled={syncing} variant={syncing?"ghost":"black"}>{syncing?"⏳ Загружаем...":"🔄 Авто-синк football-data.org"}</Btn>
+        {syncLog&&<div style={{fontFamily:F,fontSize:11,color:syncLog.startsWith("✅")?C.green:C.red,padding:"8px 4px",fontWeight:700,textTransform:"uppercase"}}>{syncLog}</div>}
+        <div style={{fontFamily:F,fontSize:9,color:C.grayDk,textTransform:"uppercase",paddingBottom:8}}>Или вводи вручную ↓</div>
+      </div>
       <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 4 }}>
         {matches.map(m => {
           const sc = scores[m.id];
@@ -655,10 +687,11 @@ function AdminUsers({ users, onAddUser, onDeleteUser }) {
 function AdminBlast() {
   const [sent, setSent] = useState({});
   const OPT = [
-    { id: "r1", icon: "⏰", t: "Напомнить — прогноз не поставлен", d: "Только те, кто не ввёл счёт", to: "Участники", p: "⏰ Матч скоро! Поставь прогноз →" },
-    { id: "r2", icon: "📣", t: "Рассылка всем участникам", d: "Независимо от статуса", to: "Все", p: "⚽ Сегодня тур ЧМ 2026! Ставь прогнозы →" },
-    { id: "r3", icon: "🏁", t: "Разослать итоги тура", d: "Каждому очки + рейтинг", to: "Все", p: "🏁 Итоги матча! Рейтинг обновлён →" },
-    { id: "r4", icon: "🎯", t: "Запросить прогноз у всех", d: "Бот напишет каждому лично", to: "Кто не поставил", p: "🎯 Привет! Какой счёт ставишь?" },
+    {id:"r1",icon:"⏰",t:"Напомнить — прогноз не поставлен",d:"Кто не ввёл на ближайший матч",to:"Кто не поставил",p:"⏰ Ты ещё не поставил прогноз на сегодняшний матч ЧМ 2026.\nУспей → cosports.vercel.app"},
+    {id:"r2",icon:"📣",t:"Объявление — сегодня игра",d:"Всем перед матчем",to:"Все",p:"⚽ Сегодня играем! ЧМ 2026 в разгаре.\nСтавь прогноз → cosports.vercel.app\n🏆 Точный счёт = 5 очков!"},
+    {id:"r3",icon:"🏁",t:"Итоги матча — рейтинг обновлён",d:"После завершения игры",to:"Все",p:"🏁 Матч завершён! Рейтинг обновлён.\nПроверь очки → cosports.vercel.app\n⭐ 5 очков за точный · 3 за разницу · 1 за исход"},
+    {id:"r4",icon:"🎯",t:"Запросить прогноз на матч",d:"Личное каждому",to:"Кто не поставил",p:"🎯 Какой счёт ставишь? Поставь сейчас → cosports.vercel.app"},
+    {id:"r5",icon:"🏆",t:"Текущий лидер + мотивация",d:"Разогреть интерес",to:"Все",p:"🏆 ЧМ 2026 идёт! Смотри лидеров → cosports.vercel.app\nВпереди плей-офф — не поздно догнать! 🔥"},
   ];
   return (
     <Scroll>
@@ -742,6 +775,7 @@ export default function App() {
   }
 
   const isAdmin = user?.role === "admin";
+  const canEditScores = user?.role === "owner";
 
   function screen() {
     if (loading) return <Loading />;
@@ -750,7 +784,7 @@ export default function App() {
     if (tab === "preds") return <Preds user={user} matches={matches} predictions={predictions} onSavePred={onSavePred} />;
     if (tab === "lb") return <LB user={user} users={users} matches={matches} predictions={predictions} />;
     if (tab === "notifs") return <Notifs user={user} users={users} matches={matches} predictions={predictions} />;
-    if (tab === "matches") return <AdminMatches matches={matches} onUpdateScore={onUpdateScore} />;
+    if (tab === "matches") return (isAdmin || canEditScores) ? <AdminMatches matches={matches} onUpdateScore={onUpdateScore} /> : null;
     if (tab === "users") return <AdminUsers users={users} onAddUser={onAddUser} onDeleteUser={onDeleteUser} />;
     if (tab === "blast") return <AdminBlast />;
   }
@@ -760,7 +794,7 @@ export default function App() {
       <Phone>
         <TgBar onBack={tab !== "home" && user ? () => setTab("home") : null} isAdmin={isAdmin} />
         {screen()}
-        {user && !loading && <Nav tab={tab} setTab={setTab} isAdmin={isAdmin} />}
+        {user && !loading && <Nav tab={tab} setTab={setTab} isAdmin={isAdmin} canEditScores={canEditScores} />}
       </Phone>
     </div>
   );
