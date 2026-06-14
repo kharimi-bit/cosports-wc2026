@@ -293,7 +293,7 @@ function Login({ onLogin, users }) {
 
 // ── HOME ───────────────────────────────────────────────────────────────────
 function Home({ user, setTab, matches, predictions, users }) {
-  const participants = users.filter(u => u.role === "participant" || u.role === "owner");
+  const participants = users.filter(u => (u.role === "participant" || u.role === "owner" || u.role === "admin") && u.id !== 98);
   const withStats = participants.map(u => ({ ...u, ...calcUserStats(u.id, matches, predictions) }));
   const sorted = [...withStats].sort((a, b) => b.pts - a.pts);
   const me = withStats.find(u => u.id === user.id) || { pts: 0, exact: 0 };
@@ -447,7 +447,7 @@ function Preds({ user, matches, predictions, onSavePred }) {
 
 // ── LEADERBOARD ────────────────────────────────────────────────────────────
 function LB({ user, users, matches, predictions }) {
-  const participants = users.filter(u => u.role === "participant" || u.role === "owner");
+  const participants = users.filter(u => (u.role === "participant" || u.role === "owner" || u.role === "admin") && u.id !== 98);
   const withStats = participants.map(u => ({ ...u, ...calcUserStats(u.id, matches, predictions) }));
   const sorted = [...withStats].sort((a, b) => b.pts - a.pts || b.exact - a.exact);
   const played = matches.filter(m => m.home_score !== null).length;
@@ -477,7 +477,7 @@ function LB({ user, users, matches, predictions }) {
 
 // ── NOTIFICATIONS (static for now) ────────────────────────────────────────
 function Notifs({ user, users, matches, predictions }) {
-  const participants = users.filter(u => u.role === "participant" || u.role === "owner");
+  const participants = users.filter(u => (u.role === "participant" || u.role === "owner" || u.role === "admin") && u.id !== 98);
   const withStats = participants.map(u => ({ ...u, ...calcUserStats(u.id, matches, predictions) }));
   const sorted = [...withStats].sort((a, b) => b.pts - a.pts);
   const medals = ["🥇", "🥈", "🥉"];
@@ -517,7 +517,7 @@ function Notifs({ user, users, matches, predictions }) {
 // ── ADMIN HOME ─────────────────────────────────────────────────────────────
 function AdminHome({ setTab, matches, users }) {
   const played = matches.filter(m => m.home_score !== null).length;
-  const participants = users.filter(u => u.role === "participant" || u.role === "owner");
+  const participants = users.filter(u => (u.role === "participant" || u.role === "owner" || u.role === "admin") && u.id !== 98);
   return (
     <Scroll>
       <div style={{ background: C.black, padding: "20px 20px 0" }}>
@@ -610,7 +610,7 @@ function AdminUsers({ users, onAddUser, onDeleteUser }) {
     setLoading(false);
   }
 
-  const participants = users.filter(u => u.role === "participant" || u.role === "owner");
+  const participants = users.filter(u => (u.role === "participant" || u.role === "owner" || u.role === "admin") && u.id !== 98);
   return (
     <Scroll>
       <GreenHero title="Участники" />
