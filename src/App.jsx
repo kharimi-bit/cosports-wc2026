@@ -6,8 +6,8 @@ const SB = createClient(
   "sb_publishable_1W3qG4dISoadczV5sWKoeQ_-XXoTAwP"
 );
 
-const FOOTBALL_API_KEY = ""; // ← вставить ключ с football-data.org (бесплатно)
 
+const FOOTBALL_API_KEY = "0d22e427b4a24923b0a88cc1a809d1ed"; // football-data.org
 const C = {
   green:"#2DB84B", greenDk:"#228F3A", black:"#0A0A0A",
   white:"#FFFFFF", offwhite:"#F2F2F2", gray:"#E0E0E0",
