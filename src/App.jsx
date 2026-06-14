@@ -177,7 +177,8 @@ function Login({ onLogin, users }) {
     if (!regName.trim()) return;
     setRegLoading(true);
     const generatedPin = String(Math.floor(1000 + Math.random() * 9000));
-    const { data, error } = await SB.from("users").insert({ name: regName.trim(), pin: generatedPin, role: "participant" }).select().single();
+    const nextId = Math.max(0, ...users.map(u => u.id)) + 1;
+    const { data, error } = await SB.from("users").insert({ id: nextId, name: regName.trim(), pin: generatedPin, role: "participant" }).select().single();
     if (error) { setErr("Ошибка: " + error.message); setRegLoading(false); return; }
     setNewPin(generatedPin);
     setNewUser(data);
@@ -714,7 +715,8 @@ export default function App() {
 
   async function onAddUser(name) {
     const pin = String(Math.floor(1000 + Math.random() * 9000));
-    await SB.from("users").insert({ name, pin, role: "participant" });
+    const nextId2 = Math.max(0, ...users.map(u => u.id)) + 1;
+    await SB.from("users").insert({ id: nextId2, name, pin, role: "participant" });
     const { data } = await SB.from("users").select("*").order("id");
     setUsers(data || []);
     return pin;
