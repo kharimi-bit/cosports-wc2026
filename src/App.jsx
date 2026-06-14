@@ -1,16 +1,27 @@
 import { useState } from "react";
 
-// SVG Logo — football with "CS" initials
-function LogoSVG({size=32,light=false}){
-  const fg = light ? "#2DB84B" : "#FFFFFF";
-  const bg = light ? "#FFFFFF" : "#2DB84B";
+// SVG Logo — clean football icon, transparent background
+function LogoSVG({size=32, onGreen=true}){
+  const c = onGreen ? "#FFFFFF" : "#2DB84B";
   return(
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="20" cy="20" r="20" fill={bg}/>
-      <polygon points="20,8 25,12 23,18 17,18 15,12" fill={fg} opacity="0.25"/>
-      <polygon points="28,14 34,16 33,22 28,25 24,21 25,15" fill={fg} opacity="0.18"/>
-      <polygon points="12,14 16,15 17,21 13,25 7,22 6,16" fill={fg} opacity="0.18"/>
-      <text x="20" y="25" textAnchor="middle" fontFamily="system-ui,-apple-system,sans-serif" fontWeight="900" fontSize="13" fill={fg} letterSpacing="-0.5">CS</text>
+      {/* Ball outline */}
+      <circle cx="20" cy="20" r="15" stroke={c} strokeWidth="2.5" fill="none"/>
+      {/* Top center pentagon */}
+      <polygon points="20,8 23.5,11 22,15.5 18,15.5 16.5,11" fill={c}/>
+      {/* Bottom center pentagon */}
+      <polygon points="20,32 23.5,29 22,24.5 18,24.5 16.5,29" fill={c}/>
+      {/* Left pentagon */}
+      <polygon points="7,19.5 10,15.5 14.5,17 14.5,23 10,24.5" fill={c}/>
+      {/* Right pentagon */}
+      <polygon points="33,19.5 30,15.5 25.5,17 25.5,23 30,24.5" fill={c}/>
+      {/* Stitch lines */}
+      <line x1="16.5" y1="11" x2="10" y2="15.5" stroke={c} strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="23.5" y1="11" x2="30" y2="15.5" stroke={c} strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="14.5" y1="17" x2="18" y2="15.5" stroke={c} strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="25.5" y1="17" x2="22" y2="15.5" stroke={c} strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="14.5" y1="23" x2="16.5" y2="29" stroke={c} strokeWidth="1.5" strokeLinecap="round"/>
+      <line x1="25.5" y1="23" x2="23.5" y2="29" stroke={c} strokeWidth="1.5" strokeLinecap="round"/>
     </svg>
   );
 }
@@ -103,7 +114,7 @@ function TgBar({onBack,isAdmin}){
   return(
     <div style={{background:C.black,padding:"10px 16px",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
       {onBack&&<span onClick={onBack} style={{color:C.green,fontSize:24,cursor:"pointer",fontWeight:900,lineHeight:1,marginRight:2}}>‹</span>}
-      <div style={{width:32,height:32,background:C.green,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontWeight:900,color:C.white,fontSize:14,fontFamily:F}}><LogoSVG size={28} light={false}/></div>
+      <div style={{width:32,height:32,background:C.green,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontWeight:900,color:C.white,fontSize:14,fontFamily:F}}><LogoSVG size={24} onGreen={true}/></div>
       <div style={{flex:1}}>
         <div style={{fontFamily:F,fontWeight:900,fontSize:13,color:C.white,textTransform:"uppercase",letterSpacing:.5}}>CoSports · ЧМ 2026</div>
         <div style={{fontFamily:F,fontSize:9,color:C.green,textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>{isAdmin?"● ADMIN":"● ONLINE"}</div>
@@ -138,7 +149,7 @@ function Login({onLogin}){
     <Scroll>
       <div style={{background:C.green,padding:"28px 20px 20px"}}>
         <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:14}}>
-          <div style={{width:44,height:44,background:C.white,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F,fontWeight:900,fontSize:16,color:C.green}}><LogoSVG size={38} light={true}/></div>
+          <div style={{width:44,height:44,background:C.white,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F,fontWeight:900,fontSize:16,color:C.green}}><LogoSVG size={34} onGreen={false}/></div>
           <div style={{fontFamily:F,fontWeight:900,fontSize:20,color:C.white,textTransform:"uppercase",letterSpacing:"-0.5px",lineHeight:1.1}}>CoSports<br/><span style={{fontSize:12,fontWeight:600,opacity:.8,letterSpacing:1}}>ЧМ 2026 · ПРОГНОЗЫ</span></div>
         </div>
         <div style={{fontFamily:F,fontWeight:900,fontSize:34,color:C.white,textTransform:"uppercase",letterSpacing:"-1.5px",lineHeight:.95}}>ВЫБЕРИ<br/>УЧАСТНИКА</div>
