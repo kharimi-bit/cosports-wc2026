@@ -132,11 +132,9 @@ function TgBar({ onBack, isAdmin }) {
   );
 }
 
-function Nav({ tab, setTab, isAdmin, canEditScores }) {
+function Nav({ tab, setTab, isAdmin }) {
   const tabs = isAdmin
     ? [["home", "⚽", "Главная"], ["matches", "⚙️", "Счета"], ["lb", "🏆", "Рейтинг"], ["users", "👥", "Люди"], ["blast", "📣", "Рассылки"]]
-    : canEditScores
-    ? [["home", "⚽", "Главная"], ["preds", "✏️", "Прогнозы"], ["matches", "⚙️", "Счета"], ["lb", "🏆", "Рейтинг"], ["notifs", "🔔", "Уведом."]]
     : [["home", "⚽", "Главная"], ["preds", "✏️", "Прогнозы"], ["lb", "🏆", "Рейтинг"], ["notifs", "🔔", "Уведом."]];
   return (
     <div style={{ display: "flex", background: C.black, flexShrink: 0 }}>
@@ -162,7 +160,7 @@ function Login({ onLogin, users }) {
   const [newPin, setNewPin] = useState(null);
   const [newUser, setNewUser] = useState(null);
 
-  const parts = users.filter(u => (u.role === "participant" || u.role === "owner" || u.role === "admin") && u.id !== 98);
+  const parts = users.filter(u => u.role === "participant" || u.role === "owner");
 
   async function doLogin() {
     const u = parts.find(u => u.id === sel && u.pin === pin);
@@ -544,15 +542,9 @@ function AdminHome({ setTab, matches, users }) {
 }
 
 // ── ADMIN MATCHES ──────────────────────────────────────────────────────────
-// Автосинк: получить ключ на https://www.football-data.org/client/register
-// WC 2026 competition id: 2000 (FIFA World Cup)
-const FOOTBALL_API_KEY = ""; // ← вставить ключ
-
 function AdminMatches({ matches, onUpdateScore }) {
   const [scores, setScores] = useState({});
   const [saving, setSaving] = useState({});
-  const [syncing, setSyncing] = useState(false);
-  const [syncLog, setSyncLog] = useState("");
 
   async function save(matchId) {
     const sc = scores[matchId];
@@ -562,63 +554,9 @@ function AdminMatches({ matches, onUpdateScore }) {
     setSaving(s => ({ ...s, [matchId]: false }));
   }
 
-  async function autoSync() {
-    if (!FOOTBALL_API_KEY) {
-      setSyncLog("❌ API ключ не задан. Добавь FOOTBALL_API_KEY в код.");
-      return;
-    }
-    setSyncing(true);
-    setSyncLog("⏳ Загружаем результаты ЧМ 2026...");
-    try {
-      const res = await fetch("https://api.football-data.org/v4/competitions/2000/matches?status=FINISHED", {
-        headers: { "X-Auth-Token": FOOTBALL_API_KEY }
-      });
-      if (!res.ok) { setSyncLog(`❌ Ошибка API: ${res.status}`); setSyncing(false); return; }
-      const data = await res.json();
-      const apiMatches = data.matches || [];
-      let updated = 0;
-      for (const am of apiMatches) {
-        const hs = am.score?.fullTime?.home;
-        const as_ = am.score?.fullTime?.away;
-        if (hs === null || as_ === null) continue;
-        // Ищем матч по названиям команд (нечёткий поиск)
-        const home = am.homeTeam.name.toUpperCase();
-        const away = am.awayTeam.name.toUpperCase();
-        const found = matches.find(m =>
-          m.home_score === null &&
-          (m.home_team.toUpperCase().includes(home.slice(0,4)) ||
-           home.includes(m.home_team.toUpperCase().slice(0,4))) &&
-          (m.away_team.toUpperCase().includes(away.slice(0,4)) ||
-           away.includes(m.away_team.toUpperCase().slice(0,4)))
-        );
-        if (found) {
-          await onUpdateScore(found.id, hs, as_);
-          updated++;
-        }
-      }
-      setSyncLog(`✅ Обновлено матчей: ${updated} из ${apiMatches.length} завершённых`);
-    } catch (e) {
-      setSyncLog("❌ Ошибка: " + e.message);
-    }
-    setSyncing(false);
-  }
-
   return (
     <Scroll>
       <GreenHero title="Счета матчей" />
-      <div style={{ padding: "10px 12px 0" }}>
-        <Btn full onClick={autoSync} disabled={syncing} variant={syncing ? "ghost" : "black"}>
-          {syncing ? "⏳ Загружаем..." : "🔄 Авто-синк с football-data.org"}
-        </Btn>
-        {syncLog && (
-          <div style={{ fontFamily: F, fontSize: 11, color: syncLog.startsWith("✅") ? C.green : C.red, padding: "8px 4px", fontWeight: 700, textTransform: "uppercase" }}>
-            {syncLog}
-          </div>
-        )}
-        <div style={{ fontFamily: F, fontSize: 9, color: C.grayDk, textTransform: "uppercase", letterSpacing: .5, paddingBottom: 8 }}>
-          Или вводи счета вручную ниже ↓
-        </div>
-      </div>
       <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 4 }}>
         {matches.map(m => {
           const sc = scores[m.id];
@@ -717,41 +655,10 @@ function AdminUsers({ users, onAddUser, onDeleteUser }) {
 function AdminBlast() {
   const [sent, setSent] = useState({});
   const OPT = [
-    {
-      id: "r1", icon: "⏰",
-      t: "Напомнить — прогноз не поставлен",
-      d: "Тем, кто ещё не ввёл счёт на ближайший матч",
-      to: "Кто не поставил",
-      p: "⏰ Эй! Ты ещё не поставил прогноз на сегодняшний матч ЧМ 2026.\nУспей до свистка → cosports.vercel.app"
-    },
-    {
-      id: "r2", icon: "📣",
-      t: "Объявление — сегодня игра",
-      d: "Всем участникам перед матчем",
-      to: "Все",
-      p: "⚽ Сегодня играем! ЧМ 2026 в разгаре.\nСтавь прогноз, пока не поздно → cosports.vercel.app\n\n🏆 Помни: точный счёт = 5 очков!"
-    },
-    {
-      id: "r3", icon: "🏁",
-      t: "Итоги матча — рейтинг обновлён",
-      d: "После завершения игры",
-      to: "Все",
-      p: "🏁 Матч завершён! Рейтинг ЧМ 2026 обновлён.\nПроверь свои очки → cosports.vercel.app\n\n⭐ 5 очков за точный счёт · 3 за разницу · 1 за исход"
-    },
-    {
-      id: "r4", icon: "🎯",
-      t: "Запросить прогноз на конкретный матч",
-      d: "Персональное сообщение каждому",
-      to: "Кто не поставил",
-      p: "🎯 Привет! Кто победит в следующей игре ЧМ 2026?\nПоставь прогноз сейчас — очки не ждут 👇\ncosports.vercel.app"
-    },
-    {
-      id: "r5", icon: "🏆",
-      t: "Текущий лидер + мотивация",
-      d: "Разогреть интерес к турниру",
-      to: "Все",
-      p: "🏆 ЧМ 2026 — турнир прогнозов идёт!\nСмотри кто лидирует прямо сейчас → cosports.vercel.app\n\nЕщё не поздно догнать — впереди плей-офф! 🔥"
-    },
+    { id: "r1", icon: "⏰", t: "Напомнить — прогноз не поставлен", d: "Только те, кто не ввёл счёт", to: "Участники", p: "⏰ Матч скоро! Поставь прогноз →" },
+    { id: "r2", icon: "📣", t: "Рассылка всем участникам", d: "Независимо от статуса", to: "Все", p: "⚽ Сегодня тур ЧМ 2026! Ставь прогнозы →" },
+    { id: "r3", icon: "🏁", t: "Разослать итоги тура", d: "Каждому очки + рейтинг", to: "Все", p: "🏁 Итоги матча! Рейтинг обновлён →" },
+    { id: "r4", icon: "🎯", t: "Запросить прогноз у всех", d: "Бот напишет каждому лично", to: "Кто не поставил", p: "🎯 Привет! Какой счёт ставишь?" },
   ];
   return (
     <Scroll>
@@ -794,7 +701,7 @@ export default function App() {
   const loadAll = useCallback(async () => {
     const [{ data: u }, { data: m }, { data: p }] = await Promise.all([
       SB.from("users").select("*").order("id"),
-      SB.from("matches").select("*").order("match_date"),
+      SB.from("matches").select("*").order("id"),
       SB.from("predictions").select("*"),
     ]);
     setUsers(u || []);
@@ -814,7 +721,7 @@ export default function App() {
 
   async function onUpdateScore(matchId, homeScore, awayScore) {
     await SB.from("matches").update({ home_score: homeScore, away_score: awayScore }).eq("id", matchId);
-    const { data } = await SB.from("matches").select("*").order("match_date");
+    const { data } = await SB.from("matches").select("*").order("id");
     setMatches(data || []);
   }
 
@@ -835,8 +742,6 @@ export default function App() {
   }
 
   const isAdmin = user?.role === "admin";
-  // owner (Саша К) и admin (Арсений) могут вводить счета
-  const canEditScores = user?.role === "owner";
 
   function screen() {
     if (loading) return <Loading />;
@@ -845,7 +750,7 @@ export default function App() {
     if (tab === "preds") return <Preds user={user} matches={matches} predictions={predictions} onSavePred={onSavePred} />;
     if (tab === "lb") return <LB user={user} users={users} matches={matches} predictions={predictions} />;
     if (tab === "notifs") return <Notifs user={user} users={users} matches={matches} predictions={predictions} />;
-    if (tab === "matches") return (isAdmin || canEditScores) ? <AdminMatches matches={matches} onUpdateScore={onUpdateScore} /> : null;
+    if (tab === "matches") return <AdminMatches matches={matches} onUpdateScore={onUpdateScore} />;
     if (tab === "users") return <AdminUsers users={users} onAddUser={onAddUser} onDeleteUser={onDeleteUser} />;
     if (tab === "blast") return <AdminBlast />;
   }
@@ -855,7 +760,7 @@ export default function App() {
       <Phone>
         <TgBar onBack={tab !== "home" && user ? () => setTab("home") : null} isAdmin={isAdmin} />
         {screen()}
-        {user && !loading && <Nav tab={tab} setTab={setTab} isAdmin={isAdmin} canEditScores={canEditScores} />}
+        {user && !loading && <Nav tab={tab} setTab={setTab} isAdmin={isAdmin} />}
       </Phone>
     </div>
   );
