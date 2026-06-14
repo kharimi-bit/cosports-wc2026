@@ -162,8 +162,8 @@ function Login({ onLogin, users }) {
   const [newPin, setNewPin] = useState(null);
   const [newUser, setNewUser] = useState(null);
 
-  const parts = users.filter(u => u.role === "participant" || u.role === "owner");
-
+  
+const parts = users.filter(u => (u.role === "participant" || u.role === "owner" || u.role === "admin") && u.id !== 98);
   async function doLogin() {
     const u = parts.find(u => u.id === sel && u.pin === pin);
     if (u) { setErr(""); onLogin(u); }
