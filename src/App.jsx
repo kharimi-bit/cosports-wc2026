@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
 const SB = createClient(
@@ -6,8 +6,8 @@ const SB = createClient(
   "sb_publishable_1W3qG4dISoadczV5sWKoeQ_-XXoTAwP"
 );
 
-
 const FOOTBALL_API_KEY = "0d22e427b4a24923b0a88cc1a809d1ed"; // football-data.org
+
 const C = {
   green:"#2DB84B", greenDk:"#228F3A", black:"#0A0A0A",
   white:"#FFFFFF", offwhite:"#F2F2F2", gray:"#E0E0E0",
@@ -377,7 +377,6 @@ function Preds({ user, matches, predictions, onSave }) {
 function UserPreds({ viewUser, matches, predictions, onBack }) {
   const { pts, exact } = calcUserStats(viewUser.id, matches, predictions);
   const played = matches.filter(m=>m.home_score!==null&&m.away_score!==null).length;
-  const medals = ["🥇","🥈","🥉"];
 
   return (
     <Scroll>
@@ -614,7 +613,7 @@ function AdminMatches({ matches, onUpdateScore }) {
   const [syncMsg, setSyncMsg] = useState("");
 
   async function autoSync() {
-    if (!FOOTBALL_API_KEY) { setSyncMsg("⚠️ API ключ не задан. Вставьте ключ с football-data.org в код."); return; }
+    if (!FOOTBALL_API_KEY) { setSyncMsg("⚠️ API ключ не задан."); return; }
     setSyncing(true); setSyncMsg("Синхронизация...");
     try {
       const r = await fetch("https://api.football-data.org/v4/competitions/2000/matches?status=FINISHED", {headers:{"X-Auth-Token":FOOTBALL_API_KEY}});
@@ -800,6 +799,8 @@ export default function App() {
   const [matches, setMatches] = useState([]);
   const [predictions, setPredictions] = useState([]);
 
+  const autoSyncedRef = useRef(false);
+
   async function loadData() {
     const [u, m, p] = await Promise.all([
       SB.from("users").select("*"),
@@ -809,9 +810,50 @@ export default function App() {
     setUsers(u.data||[]);
     setMatches(m.data||[]);
     setPredictions(p.data||[]);
+    return m.data||[];
   }
 
-  useEffect(() => { loadData(); }, []);
+  async function silentAutoSync(loadedMatches) {
+    if (!FOOTBALL_API_KEY || autoSyncedRef.current) return;
+    const now = new Date();
+    const needsSync = loadedMatches.some(m => {
+      if (m.home_score !== null) return false;
+      return (now - new Date(m.match_date)) / 3600000 >= 3;
+    });
+    if (!needsSync) return;
+    autoSyncedRef.current = true;
+    try {
+      const res = await fetch(
+        "https://api.football-data.org/v4/competitions/2000/matches?status=FINISHED",
+        { headers: { "X-Auth-Token": FOOTBALL_API_KEY } }
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      const finished = data.matches || [];
+      const norm = s => (s||"").toLowerCase().replace(/[^a-z]/g,"");
+      let updated = false;
+      for (const m of loadedMatches) {
+        if (m.home_score !== null) continue;
+        if ((now - new Date(m.match_date)) / 3600000 < 3) continue;
+        const mh = norm(m.home_team), ma = norm(m.away_team);
+        const found = finished.find(fm => {
+          const fh = norm(fm.homeTeam?.name), fa = norm(fm.awayTeam?.name);
+          return (fh.includes(mh.slice(0,4)) || mh.includes(fh.slice(0,4))) &&
+                 (fa.includes(ma.slice(0,4)) || ma.includes(fa.slice(0,4)));
+        });
+        const sc = found?.score?.fullTime;
+        if (sc && sc.home !== null && sc.away !== null) {
+          await SB.from("matches").update({ home_score: sc.home, away_score: sc.away }).eq("id", m.id);
+          updated = true;
+        }
+      }
+      if (updated) loadData();
+    } catch(e) {}
+  }
+
+  useEffect(() => {
+    loadData().then(m => { if (m?.length) silentAutoSync(m); });
+  }, []);
 
   const isAdmin = user?.role === "admin";
   const canEditScores = user?.role === "owner";
