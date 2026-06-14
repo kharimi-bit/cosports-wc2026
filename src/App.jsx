@@ -1,20 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
-
 const SB = createClient(
   "https://wwokzpwpuyhzyzrilwqf.supabase.co",
   "sb_publishable_1W3qG4dISoadczV5sWKoeQ_-XXoTAwP"
 );
-
-const FOOTBALL_API_KEY = "0d22e427b4a24923b0a88cc1a809d1ed"; // football-data.org
-
+const FOOTBALL_API_KEY = "0d22e427b4a24923b0a88cc1a809d1ed";
 const C = {
   green:"#2DB84B", greenDk:"#228F3A", black:"#0A0A0A",
   white:"#FFFFFF", offwhite:"#F2F2F2", gray:"#E0E0E0",
   grayDk:"#AAAAAA", card:"#F7F7F7", gold:"#F5C842", red:"#E63232",
 };
 const F = "system-ui,-apple-system,'Helvetica Neue',sans-serif";
-
 function calcPts(pred, match) {
   if (!pred || match.home_score === null || match.away_score === null ||
       match.home_score === undefined || match.away_score === undefined) return null;
@@ -25,7 +21,6 @@ function calcPts(pred, match) {
   if ((ph - pa) === (rh - ra)) return 3;
   return 1;
 }
-
 function calcUserStats(userId, matches, predictions) {
   let pts = 0, exact = 0;
   for (const m of matches) {
@@ -35,13 +30,11 @@ function calcUserStats(userId, matches, predictions) {
   }
   return { pts, exact };
 }
-
 function fmtDate(dt) {
   if (!dt) return "";
   const d = new Date(dt);
   return `${d.getDate().toString().padStart(2,"0")}.${(d.getMonth()+1).toString().padStart(2,"0")} ${d.getHours().toString().padStart(2,"0")}:${d.getMinutes().toString().padStart(2,"0")}`;
 }
-
 function LogoSVG({ size=32, light=false }) {
   const fg = light ? "#2DB84B" : "#FFFFFF";
   const bg = light ? "#FFFFFF" : "#2DB84B";
@@ -55,7 +48,6 @@ function LogoSVG({ size=32, light=false }) {
     </svg>
   );
 }
-
 function StatRow({ items }) {
   return (
     <div style={{display:"flex",gap:2}}>
@@ -68,7 +60,6 @@ function StatRow({ items }) {
     </div>
   );
 }
-
 function Btn({ children, onClick, variant="green", full, sm }) {
   const base = {fontFamily:F,fontWeight:900,fontSize:sm?11:14,textTransform:"uppercase",letterSpacing:.5,border:"none",cursor:"pointer",padding:sm?"8px 12px":"13px 18px",borderRadius:0,display:"block",width:full?"100%":"auto"};
   const v = {
@@ -79,11 +70,9 @@ function Btn({ children, onClick, variant="green", full, sm }) {
   };
   return <button onClick={onClick} style={v[variant]||v.green}>{children}</button>;
 }
-
 function Scroll({ children }) {
   return <div style={{flex:1,overflowY:"auto",scrollbarWidth:"none",background:C.offwhite}}>{children}</div>;
 }
-
 function Phone({ children }) {
   return (
     <div style={{background:"#111",borderRadius:44,padding:12,maxWidth:400,margin:"20px auto",boxShadow:"0 30px 80px rgba(0,0,0,.65)"}}>
@@ -95,7 +84,6 @@ function Phone({ children }) {
     </div>
   );
 }
-
 function TgBar({ onBack, isAdmin, onLogout }) {
   return (
     <div style={{background:C.black,padding:"10px 16px",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
@@ -113,7 +101,6 @@ function TgBar({ onBack, isAdmin, onLogout }) {
     </div>
   );
 }
-
 function Nav({ tab, setTab, isAdmin, canEditScores }) {
   const tabs = isAdmin
     ? [["home","⚽","Главная"],["matches","⚙️","Счета"],["lb","🏆","Рейтинг"],["users","👥","Люди"],["blast","📣","Рассылки"]]
@@ -131,40 +118,34 @@ function Nav({ tab, setTab, isAdmin, canEditScores }) {
     </div>
   );
 }
-
 // ─── LOGIN ───────────────────────────────────────────────────────────────────
-function Login({ onLogin }) {
+function Login({ onLogin, skipAutoLogin }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tgUser, setTgUser] = useState(null);
   const [sel, setSel] = useState(null);
   const [binding, setBinding] = useState(false);
-
   useEffect(() => {
-    // Expand to full screen in Telegram
     window.Telegram?.WebApp?.expand();
-
     async function init() {
       const { data } = await SB.from("users").select("*");
       const allUsers = data || [];
       setUsers(allUsers);
-
-      // Try Telegram auto-login
       const tg = window.Telegram?.WebApp?.initDataUnsafe?.user;
       if (tg?.id) {
-        const found = allUsers.find(u => String(u.telegram_id) === String(tg.id));
-        if (found) { onLogin(found); return; } // ✅ Авто-вход!
-        setTgUser(tg); // Первый раз — предложим привязать
+        if (!skipAutoLogin) {
+          const found = allUsers.find(u => String(u.telegram_id) === String(tg.id));
+          if (found) { onLogin(found); return; } // ✅ Авто-вход!
+        }
+        setTgUser(tg); // Показываем имя, но не входим
       }
       setLoading(false);
     }
     init();
   }, []);
-
   const parts = users.filter(u =>
     (u.role === "participant" || u.role === "owner" || u.role === "admin") && u.id !== 98
   );
-
   async function bindAndLogin(userId) {
     setBinding(true);
     const user = users.find(u => u.id === userId);
@@ -173,7 +154,6 @@ function Login({ onLogin }) {
     }
     onLogin(user);
   }
-
   if (loading) return (
     <div style={{flex:1,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:12}}>
       <div style={{width:40,height:40,background:C.green,borderRadius:"50%",display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -182,7 +162,6 @@ function Login({ onLogin }) {
       <div style={{fontFamily:F,fontSize:12,fontWeight:700,color:C.grayDk,textTransform:"uppercase",letterSpacing:1}}>Загрузка...</div>
     </div>
   );
-
   return (
     <Scroll>
       <div style={{background:C.green,padding:"28px 20px 20px"}}>
@@ -202,7 +181,6 @@ function Login({ onLogin }) {
           : <div style={{fontFamily:F,fontWeight:900,fontSize:34,color:C.white,textTransform:"uppercase",letterSpacing:"-1.5px",lineHeight:.95}}>ВЫБЕРИ<br/>УЧАСТНИКА</div>
         }
       </div>
-
       <div style={{padding:16}}>
         {tgUser && (
           <div style={{background:C.black,padding:"10px 14px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
@@ -213,7 +191,6 @@ function Login({ onLogin }) {
             </div>
           </div>
         )}
-
         <div style={{fontFamily:F,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:C.grayDk,marginBottom:8}}>
           {tgUser ? "Кто ты в нашей игре?" : "Выбери участника"}
         </div>
@@ -227,7 +204,6 @@ function Login({ onLogin }) {
             }}>{u.name}</button>
           ))}
         </div>
-
         <Btn
           onClick={()=>sel&&bindAndLogin(sel)}
           variant={sel?"green":"ghost"}
@@ -235,7 +211,6 @@ function Login({ onLogin }) {
         >
           {binding ? "⏳ Входим..." : sel ? (tgUser ? "✅ Это я, войти!" : "Войти →") : "Выбери своё имя"}
         </Btn>
-
         {!tgUser && (
           <div style={{fontFamily:F,fontSize:10,color:C.grayDk,textAlign:"center",marginTop:10,textTransform:"uppercase",letterSpacing:.5}}>
             Открой через Telegram для авто-входа
@@ -245,7 +220,6 @@ function Login({ onLogin }) {
     </Scroll>
   );
 }
-
 // ─── HOME ────────────────────────────────────────────────────────────────────
 function Home({ user, users, matches, predictions, setTab }) {
   const participants = users.filter(u =>
@@ -260,7 +234,6 @@ function Home({ user, users, matches, predictions, setTab }) {
   const next = matches.find(m=>m.home_score===null||m.away_score===null);
   const myPred = next ? predictions.find(p=>p.user_id===user.id&&p.match_id===next.id) : null;
   const medals = ["🥇","🥈","🥉"];
-
   return (
     <Scroll>
       <div style={{background:C.green,padding:"20px 20px 0"}}>
@@ -268,7 +241,6 @@ function Home({ user, users, matches, predictions, setTab }) {
         <div style={{fontFamily:F,fontWeight:900,fontSize:34,color:C.white,textTransform:"uppercase",letterSpacing:"-1.5px",lineHeight:.95,marginBottom:16}}>{user.name}</div>
         <StatRow items={[[myStats.pts,"Очков",C.black],[`#${rank}`,"Место",C.green],[`${played}/24`,"Матчей",C.black]]}/>
       </div>
-
       {next && (
         <div style={{padding:16}}>
           <div style={{fontFamily:F,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:C.grayDk,marginBottom:8}}>Ближайший матч</div>
@@ -286,7 +258,6 @@ function Home({ user, users, matches, predictions, setTab }) {
           </div>
         </div>
       )}
-
       <div style={{margin:"0 16px 16px",background:C.black,position:"relative",overflow:"hidden"}}>
         <div style={{padding:"10px 16px",display:"flex",alignItems:"center",gap:12}}>
           <div style={{width:36,height:36,background:C.green,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
@@ -300,7 +271,6 @@ function Home({ user, users, matches, predictions, setTab }) {
         </div>
         <div style={{position:"absolute",bottom:0,left:0,right:0,height:2,background:C.green}}/>
       </div>
-
       <div style={{padding:"0 16px 16px"}}>
         <div style={{fontFamily:F,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:1,color:C.grayDk,marginBottom:8}}>Топ участников</div>
         {ranked.slice(0,5).map((u,i) => {
@@ -323,32 +293,27 @@ function Home({ user, users, matches, predictions, setTab }) {
     </Scroll>
   );
 }
-
 // ─── PREDS ───────────────────────────────────────────────────────────────────
 function Preds({ user, matches, predictions, onSave }) {
   const [editing, setEditing] = useState(null);
   const [localPreds, setLocalPreds] = useState({});
-
   if (editing !== null) {
     const m = matches.find(x => x.id === editing);
     const existing = localPreds[m.id] || predictions.find(p=>p.user_id===user.id&&p.match_id===m.id)?.prediction || "0:0";
     const [h, a] = existing.split(":").map(Number);
     const hint = h>a?`Победа ${m.home_team}`:a>h?`Победа ${m.away_team}`:"Ничья";
     const icon = h>a?"🏠":a>h?"✈️":"🤝";
-
     function chg(side, d) {
       const parts = existing.split(":").map(Number);
       parts[side] = Math.max(0, Math.min(15, parts[side]+d));
       setLocalPreds(s => ({...s,[m.id]:parts.join(":")}));
     }
-
     async function save() {
       const pred = localPreds[m.id] || existing;
       await SB.from("predictions").upsert({user_id:user.id,match_id:m.id,prediction:pred},{onConflict:"user_id,match_id"});
       onSave();
       setEditing(null);
     }
-
     return (
       <Scroll>
         <div style={{background:C.green,padding:"20px 20px 0"}}>
@@ -381,7 +346,6 @@ function Preds({ user, matches, predictions, onSave }) {
       </Scroll>
     );
   }
-
   return (
     <Scroll>
       <div style={{background:C.green,padding:"20px 20px 0"}}>
@@ -413,13 +377,10 @@ function Preds({ user, matches, predictions, onSave }) {
     </Scroll>
   );
 }
-
-// ─── USER PREDS (view another user's predictions) ─────────────────────────────
+// ─── USER PREDS ───────────────────────────────────────────────────────────────
 function UserPreds({ viewUser, matches, predictions, onBack }) {
   const { pts, exact } = calcUserStats(viewUser.id, matches, predictions);
   const played = matches.filter(m=>m.home_score!==null&&m.away_score!==null).length;
-  const medals = ["🥇","🥈","🥉"];
-
   return (
     <Scroll>
       <div style={{background:C.black,padding:"20px 20px 0"}}>
@@ -452,8 +413,7 @@ function UserPreds({ viewUser, matches, predictions, onBack }) {
     </Scroll>
   );
 }
-
-// ─── ALL PREDS (all participants by match) ────────────────────────────────────
+// ─── ALL PREDS ────────────────────────────────────────────────────────────────
 function AllPreds({ user, users, matches, predictions }) {
   const participants = users.filter(u =>
     (u.role==="participant"||u.role==="owner"||u.role==="admin") && u.id !== 98
@@ -461,7 +421,6 @@ function AllPreds({ user, users, matches, predictions }) {
   const ranked = [...participants]
     .map(u => ({...u,...calcUserStats(u.id,matches,predictions)}))
     .sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
-
   return (
     <Scroll>
       <div style={{background:C.green,padding:"20px 20px 16px"}}>
@@ -503,12 +462,10 @@ function AllPreds({ user, users, matches, predictions }) {
     </Scroll>
   );
 }
-
 // ─── LEADERBOARD ─────────────────────────────────────────────────────────────
 function LB({ user, users, matches, predictions }) {
   const [viewUser, setViewUser] = useState(null);
   const [mode, setMode] = useState("lb");
-
   const participants = users.filter(u =>
     (u.role==="participant"||u.role==="owner"||u.role==="admin") && u.id !== 98
   );
@@ -517,18 +474,15 @@ function LB({ user, users, matches, predictions }) {
     .sort((a,b)=>b.pts-a.pts||b.exact-a.exact);
   const played = matches.filter(m=>m.home_score!==null&&m.away_score!==null).length;
   const medals = ["🥇","🥈","🥉"];
-
   if (viewUser) {
     return <UserPreds viewUser={viewUser} matches={matches} predictions={predictions} onBack={()=>setViewUser(null)}/>;
   }
-
   const Toggle = () => (
     <div style={{background:C.black,padding:"8px 12px",display:"flex",gap:4,flexShrink:0}}>
       <button onClick={()=>setMode("lb")} style={{flex:1,padding:"8px 0",background:mode==="lb"?C.green:C.offwhite,border:"none",fontFamily:F,fontWeight:700,fontSize:11,textTransform:"uppercase",cursor:"pointer",color:mode==="lb"?C.white:C.black}}>🏆 Рейтинг</button>
       <button onClick={()=>setMode("all")} style={{flex:1,padding:"8px 0",background:mode==="all"?C.green:C.offwhite,border:"none",fontFamily:F,fontWeight:700,fontSize:11,textTransform:"uppercase",cursor:"pointer",color:mode==="all"?C.white:C.black}}>📋 Все прогнозы</button>
     </div>
   );
-
   if (mode === "all") {
     return (
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden"}}>
@@ -537,7 +491,6 @@ function LB({ user, users, matches, predictions }) {
       </div>
     );
   }
-
   return (
     <Scroll>
       <div style={{background:C.green,padding:"20px 20px 0"}}>
@@ -563,7 +516,6 @@ function LB({ user, users, matches, predictions }) {
     </Scroll>
   );
 }
-
 // ─── NOTIFS ──────────────────────────────────────────────────────────────────
 function Notifs({ user, users, matches, predictions }) {
   const participants = users.filter(u=>
@@ -577,7 +529,6 @@ function Notifs({ user, users, matches, predictions }) {
   const next = matches.find(m=>m.home_score===null||m.away_score===null);
   const myNextPred = next ? predictions.find(p=>p.user_id===user.id&&p.match_id===next.id) : null;
   const medals = ["🥇","🥈","🥉"];
-
   return (
     <Scroll>
       <div style={{background:C.green,padding:"20px 20px 0"}}>
@@ -621,7 +572,6 @@ function Notifs({ user, users, matches, predictions }) {
     </Scroll>
   );
 }
-
 // ─── ADMIN HOME ───────────────────────────────────────────────────────────────
 function AdminHome({ setTab, matches, users }) {
   const played = matches.filter(m=>m.home_score!==null&&m.away_score!==null).length;
@@ -648,14 +598,12 @@ function AdminHome({ setTab, matches, users }) {
     </Scroll>
   );
 }
-
 // ─── ADMIN MATCHES ────────────────────────────────────────────────────────────
 function AdminMatches({ matches, onUpdateScore }) {
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState("");
-
   async function autoSync() {
-    if (!FOOTBALL_API_KEY) { setSyncMsg("⚠️ API ключ не задан. Вставьте ключ с football-data.org в код."); return; }
+    if (!FOOTBALL_API_KEY) { setSyncMsg("⚠️ API ключ не задан."); return; }
     setSyncing(true); setSyncMsg("Синхронизация...");
     try {
       const r = await fetch("https://api.football-data.org/v4/competitions/2000/matches?status=FINISHED", {headers:{"X-Auth-Token":FOOTBALL_API_KEY}});
@@ -681,7 +629,6 @@ function AdminMatches({ matches, onUpdateScore }) {
     } catch(e) { setSyncMsg("❌ Ошибка: "+e.message); }
     setSyncing(false);
   }
-
   return (
     <Scroll>
       <div style={{background:C.green,padding:"20px 20px 0"}}>
@@ -729,14 +676,12 @@ function AdminMatches({ matches, onUpdateScore }) {
     </Scroll>
   );
 }
-
 // ─── ADMIN USERS ──────────────────────────────────────────────────────────────
 function AdminUsers({ users, onRefresh }) {
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [dupErr, setDupErr] = useState(false);
   const participants = users.filter(u=>(u.role==="participant"||u.role==="owner"||u.role==="admin")&&u.id!==98);
-
   async function addUser() {
     if (!newName.trim()) return;
     const dup = users.find(u => u.name.trim().toLowerCase() === newName.trim().toLowerCase());
@@ -747,14 +692,12 @@ function AdminUsers({ users, onRefresh }) {
     await SB.from("users").insert({id:newId,name:newName.trim(),pin,role:"participant"});
     setNewName(""); setAdding(false); onRefresh();
   }
-
   async function resetPin(u) {
     const pin = Math.floor(1000+Math.random()*9000).toString();
     await SB.from("users").update({pin}).eq("id",u.id);
     alert(`Новый пин для ${u.name}: ${pin}`);
     onRefresh();
   }
-
   return (
     <Scroll>
       <div style={{background:C.green,padding:"20px 20px 0"}}>
@@ -790,7 +733,6 @@ function AdminUsers({ users, onRefresh }) {
     </Scroll>
   );
 }
-
 // ─── ADMIN BLAST ──────────────────────────────────────────────────────────────
 function AdminBlast() {
   const [sent, setSent] = useState({});
@@ -837,7 +779,6 @@ function AdminBlast() {
     </Scroll>
   );
 }
-
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 export default function App() {
   const [user, setUser] = useState(null);
@@ -845,9 +786,8 @@ export default function App() {
   const [users, setUsers] = useState([]);
   const [matches, setMatches] = useState([]);
   const [predictions, setPredictions] = useState([]);
-
   const autoSyncedRef = useRef(false);
-
+  const skipAutoLoginRef = useRef(false);  // ← FIX: флаг выхода
   async function loadData() {
     const [u, m, p] = await Promise.all([
       SB.from("users").select("*"),
@@ -859,7 +799,6 @@ export default function App() {
     setPredictions(p.data||[]);
     return m.data||[];
   }
-
   async function silentAutoSync(loadedMatches) {
     if (!FOOTBALL_API_KEY || autoSyncedRef.current) return;
     const now = new Date();
@@ -897,16 +836,18 @@ export default function App() {
       if (updated) loadData();
     } catch(e) {}
   }
-
   useEffect(() => {
     loadData().then(m => { if (m?.length) silentAutoSync(m); });
   }, []);
-
   const isAdmin = user?.role === "admin";
   const canEditScores = user?.role === "owner";
-
   function screen() {
-    if (!user) return <Login onLogin={u=>{setUser(u);setTab("home");}}/>;
+    if (!user) return (
+      <Login
+        onLogin={u => { skipAutoLoginRef.current = false; setUser(u); setTab("home"); }}
+        skipAutoLogin={skipAutoLoginRef.current}
+      />
+    );
     if (tab==="home")    return isAdmin
       ? <AdminHome setTab={setTab} matches={matches} users={users}/>
       : <Home user={user} users={users} matches={matches} predictions={predictions} setTab={setTab}/>;
@@ -917,11 +858,14 @@ export default function App() {
     if (tab==="users")   return <AdminUsers users={users} onRefresh={loadData}/>;
     if (tab==="blast")   return <AdminBlast/>;
   }
-
   return (
     <div style={{background:"#0A0A0A",minHeight:"100vh",padding:"0 10px 20px"}}>
       <Phone>
-        <TgBar onBack={tab!=="home"&&user?()=>setTab("home"):null} isAdmin={isAdmin} onLogout={user?()=>{setUser(null);setTab("home");}:null}/>
+        <TgBar
+          onBack={tab!=="home"&&user?()=>setTab("home"):null}
+          isAdmin={isAdmin}
+          onLogout={user ? () => { skipAutoLoginRef.current = true; setUser(null); setTab("home"); } : null}
+        />
         {screen()}
         {user && <Nav tab={tab} setTab={setTab} isAdmin={isAdmin} canEditScores={canEditScores}/>}
       </Phone>
