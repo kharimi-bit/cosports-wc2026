@@ -105,7 +105,7 @@ function Nav({ tab, setTab, isAdmin, canEditScores }) {
   const tabs = isAdmin
     ? [["home","⚽","Главная"],["matches","⚙️","Счета"],["lb","🏆","Рейтинг"],["users","👥","Люди"],["blast","📣","Рассылки"]]
     : canEditScores
-    ? [["home","⚽","Главная"],["preds","✏️","Прогнозы"],["matches","⚙️","Счета"],["lb","🏆","Рейтинг"],["notifs","🔔","Уведом."]]
+    ? [["home","⚽","Главная"],["preds","✏️","Прогнозы"],["matches","⚙️","Счета"],["lb","🏆","Рейтинг"],["users","👥","Люди"]]
     : [["home","⚽","Главная"],["preds","✏️","Прогнозы"],["lb","🏆","Рейтинг"],["notifs","🔔","Уведом."]];
   return (
     <div style={{display:"flex",background:C.black,flexShrink:0}}>
@@ -135,9 +135,9 @@ function Login({ onLogin, skipAutoLogin }) {
       if (tg?.id) {
         if (!skipAutoLogin) {
           const found = allUsers.find(u => String(u.telegram_id) === String(tg.id));
-          if (found) { onLogin(found); return; } // ✅ Авто-вход!
+          if (found) { onLogin(found); return; }
         }
-        setTgUser(tg); // Показываем имя, но не входим
+        setTgUser(tg);
       }
       setLoading(false);
     }
@@ -687,16 +687,9 @@ function AdminUsers({ users, onRefresh }) {
     const dup = users.find(u => u.name.trim().toLowerCase() === newName.trim().toLowerCase());
     if (dup) { setDupErr(true); return; }
     setDupErr(false);
-    const pin = Math.floor(1000+Math.random()*9000).toString();
     const newId = Math.max(0,...users.map(u=>u.id))+1;
-    await SB.from("users").insert({id:newId,name:newName.trim(),pin,role:"participant"});
+    await SB.from("users").insert({id:newId, name:newName.trim(), role:"participant"});
     setNewName(""); setAdding(false); onRefresh();
-  }
-  async function resetPin(u) {
-    const pin = Math.floor(1000+Math.random()*9000).toString();
-    await SB.from("users").update({pin}).eq("id",u.id);
-    alert(`Новый пин для ${u.name}: ${pin}`);
-    onRefresh();
   }
   return (
     <Scroll>
@@ -714,7 +707,6 @@ function AdminUsers({ users, onRefresh }) {
               <Btn onClick={addUser}>✓</Btn>
             </div>
             {dupErr && <div style={{fontFamily:F,fontSize:10,fontWeight:700,color:C.red,textTransform:"uppercase",marginTop:6}}>⚠️ Участник с таким именем уже есть</div>}
-            {!dupErr && <div style={{fontFamily:F,fontSize:9,color:C.grayDk,marginTop:6,textTransform:"uppercase"}}>Пин генерируется автоматически</div>}
           </div>
         )}
         <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:3}}>
@@ -723,9 +715,8 @@ function AdminUsers({ users, onRefresh }) {
               <div style={{width:36,height:36,background:C.green,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:F,fontWeight:900,fontSize:16,color:C.white,marginRight:12,flexShrink:0}}>{u.name[0]}</div>
               <div style={{flex:1}}>
                 <div style={{fontFamily:F,fontWeight:700,fontSize:14,color:C.black,textTransform:"uppercase"}}>{u.name}</div>
-                <div style={{fontFamily:F,fontSize:10,color:C.grayDk}}>пин: {u.pin} · роль: {u.role}</div>
+                <div style={{fontFamily:F,fontSize:10,color:C.grayDk,textTransform:"uppercase"}}>роль: {u.role}</div>
               </div>
-              <Btn sm variant="white" onClick={()=>resetPin(u)}>Пин</Btn>
             </div>
           ))}
         </div>
@@ -787,7 +778,7 @@ export default function App() {
   const [matches, setMatches] = useState([]);
   const [predictions, setPredictions] = useState([]);
   const autoSyncedRef = useRef(false);
-  const skipAutoLoginRef = useRef(false);  // ← FIX: флаг выхода
+  const skipAutoLoginRef = useRef(false);
   async function loadData() {
     const [u, m, p] = await Promise.all([
       SB.from("users").select("*"),
@@ -855,8 +846,8 @@ export default function App() {
     if (tab==="lb")      return <LB user={user} users={users} matches={matches} predictions={predictions}/>;
     if (tab==="notifs")  return <Notifs user={user} users={users} matches={matches} predictions={predictions}/>;
     if (tab==="matches") return (isAdmin||canEditScores) ? <AdminMatches matches={matches} onUpdateScore={loadData}/> : null;
-    if (tab==="users")   return <AdminUsers users={users} onRefresh={loadData}/>;
-    if (tab==="blast")   return <AdminBlast/>;
+    if (tab==="users")   return (isAdmin||canEditScores) ? <AdminUsers users={users} onRefresh={loadData}/> : null;
+    if (tab==="blast")   return isAdmin ? <AdminBlast/> : null;
   }
   return (
     <div style={{background:"#0A0A0A",minHeight:"100vh",padding:"0 10px 20px"}}>
