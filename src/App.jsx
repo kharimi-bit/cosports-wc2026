@@ -96,7 +96,7 @@ function Phone({ children }) {
   );
 }
 
-function TgBar({ onBack, isAdmin }) {
+function TgBar({ onBack, isAdmin, onLogout }) {
   return (
     <div style={{background:C.black,padding:"10px 16px",display:"flex",alignItems:"center",gap:10,flexShrink:0}}>
       {onBack && <span onClick={onBack} style={{color:C.green,fontSize:24,cursor:"pointer",fontWeight:900,lineHeight:1,marginRight:2}}>‹</span>}
@@ -107,6 +107,9 @@ function TgBar({ onBack, isAdmin }) {
         <div style={{fontFamily:F,fontWeight:900,fontSize:13,color:C.white,textTransform:"uppercase",letterSpacing:.5}}>CoSports · ЧМ 2026</div>
         <div style={{fontFamily:F,fontSize:9,color:C.green,textTransform:"uppercase",letterSpacing:1,fontWeight:700}}>{isAdmin?"● ADMIN":"● ONLINE"}</div>
       </div>
+      {onLogout && (
+        <button onClick={onLogout} style={{background:"transparent",border:`1px solid #333`,color:C.grayDk,fontFamily:F,fontSize:9,fontWeight:700,textTransform:"uppercase",letterSpacing:.5,padding:"5px 8px",cursor:"pointer"}}>Выйти</button>
+      )}
     </div>
   );
 }
@@ -731,10 +734,14 @@ function AdminMatches({ matches, onUpdateScore }) {
 function AdminUsers({ users, onRefresh }) {
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
+  const [dupErr, setDupErr] = useState(false);
   const participants = users.filter(u=>(u.role==="participant"||u.role==="owner"||u.role==="admin")&&u.id!==98);
 
   async function addUser() {
     if (!newName.trim()) return;
+    const dup = users.find(u => u.name.trim().toLowerCase() === newName.trim().toLowerCase());
+    if (dup) { setDupErr(true); return; }
+    setDupErr(false);
     const pin = Math.floor(1000+Math.random()*9000).toString();
     const newId = Math.max(0,...users.map(u=>u.id))+1;
     await SB.from("users").insert({id:newId,name:newName.trim(),pin,role:"participant"});
@@ -759,11 +766,12 @@ function AdminUsers({ users, onRefresh }) {
           <div style={{background:C.black,padding:14,marginTop:4}}>
             <div style={{fontFamily:F,fontSize:10,fontWeight:700,color:C.grayDk,textTransform:"uppercase",marginBottom:8}}>Имя участника</div>
             <div style={{display:"flex",gap:4}}>
-              <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="Например: Никита"
-                style={{flex:1,background:"#1a1a1a",border:`2px solid ${C.green}`,padding:"10px 12px",color:C.white,fontSize:14,outline:"none",fontFamily:F}}/>
+              <input value={newName} onChange={e=>{setNewName(e.target.value);setDupErr(false);}} placeholder="Например: Никита"
+                style={{flex:1,background:"#1a1a1a",border:`2px solid ${dupErr?C.red:C.green}`,padding:"10px 12px",color:C.white,fontSize:14,outline:"none",fontFamily:F}}/>
               <Btn onClick={addUser}>✓</Btn>
             </div>
-            <div style={{fontFamily:F,fontSize:9,color:C.grayDk,marginTop:6,textTransform:"uppercase"}}>Пин генерируется автоматически</div>
+            {dupErr && <div style={{fontFamily:F,fontSize:10,fontWeight:700,color:C.red,textTransform:"uppercase",marginTop:6}}>⚠️ Участник с таким именем уже есть</div>}
+            {!dupErr && <div style={{fontFamily:F,fontSize:9,color:C.grayDk,marginTop:6,textTransform:"uppercase"}}>Пин генерируется автоматически</div>}
           </div>
         )}
         <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:3}}>
@@ -913,7 +921,7 @@ export default function App() {
   return (
     <div style={{background:"#0A0A0A",minHeight:"100vh",padding:"0 10px 20px"}}>
       <Phone>
-        <TgBar onBack={tab!=="home"&&user?()=>setTab("home"):null} isAdmin={isAdmin}/>
+        <TgBar onBack={tab!=="home"&&user?()=>setTab("home"):null} isAdmin={isAdmin} onLogout={user?()=>{setUser(null);setTab("home");}:null}/>
         {screen()}
         {user && <Nav tab={tab} setTab={setTab} isAdmin={isAdmin} canEditScores={canEditScores}/>}
       </Phone>
