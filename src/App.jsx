@@ -103,7 +103,7 @@ function TgBar({ onBack, isAdmin, onLogout }) {
 }
 function Nav({ tab, setTab, isAdmin, canEditScores }) {
   const tabs = isAdmin
-    ? [["home","⚽","Главная"],["matches","⚙️","Счета"],["lb","🏆","Рейтинг"],["users","👥","Люди"],["blast","📣","Рассылки"]]
+    ? [["home","⚽","Главная"],["preds","✏️","Прогнозы"],["matches","⚙️","Счета"],["lb","🏆","Рейтинг"],["users","👥","Люди"]]
     : canEditScores
     ? [["home","⚽","Главная"],["preds","✏️","Прогнозы"],["matches","⚙️","Счета"],["lb","🏆","Рейтинг"],["users","👥","Люди"]]
     : [["home","⚽","Главная"],["preds","✏️","Прогнозы"],["lb","🏆","Рейтинг"],["notifs","🔔","Уведом."]];
